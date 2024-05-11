@@ -1,23 +1,23 @@
 /*******************************************************************************************
-*
-*   raylib [core] examples - basic screen manager
-*
-*   NOTE: This example illustrates a very simple screen manager based on a states machines
-*
-*   Example originally created with raylib 4.0, last time updated with raylib 4.0
-*
-*   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
-*   BSD-like license that allows static linking with closed source software
-*
-*   Copyright (c) 2021-2024 Ramon Santamaria (@raysan5)
-*
-********************************************************************************************/
+ *
+ *   raylib [core] examples - basic screen manager
+ *
+ *   NOTE: This example illustrates a very simple screen manager based on a states machines
+ *
+ *   Example originally created with raylib 4.0, last time updated with raylib 4.0
+ *
+ *   Example licensed under an unmodified zlib/libpng license, which is an OSI-certified,
+ *   BSD-like license that allows static linking with closed source software
+ *
+ *   Copyright (c) 2021-2024 Ramon Santamaria (@raysan5)
+ *
+ ********************************************************************************************/
 
-#include "raylib.h"
-#include "rlgl.h"
+#include "Include/raylib.h"
+#include "Include/rlgl.h"
 #define RAYGUI_IMPLEMENTATION
-#include "raygui.h"
-#include <String.h>"
+#include "Include/raygui.h"
+#include <string.h>
 //------------------------------------------------------------------------------------------
 // Types and Structures Definition
 //------------------------------------------------------------------------------------------
@@ -25,9 +25,9 @@
 
 //------------------------------------------------------------------------------------------
 typedef enum BoneJoint { ROOT = 0, HIP, L_HIP, L_KNEE, R_HIP, R_KNEE,
-                           TORSO, CHEST, L_SHOULDER, L_ELBOW, R_SHOULDER, R_ELBOW,
-                           NECK };
-                           
+    TORSO, CHEST, L_SHOULDER, L_ELBOW, R_SHOULDER, R_ELBOW,
+    NECK } BoneJoint;
+
 // This struct defines bone positions
 typedef struct Skeleton{
     Vector3 root;
@@ -87,13 +87,19 @@ typedef struct PoseFrame{
 }PoseFrame;
 
 //------------------------------------------------------------------------------------------
+// Create global data references
+Skeleton _skeleton;
+Ragdoll _ragdoll;
+PoseFrame _poseFrame;
+
+//------------------------------------------------------------------------------------------
 // Screen state
 //------------------------------------------------------------------------------------------
 typedef enum GameScreen { LOGO = 0, TITLE, WORKSPACE, ENDING } GameScreen;
 
-typedef enum AppScreen { 
-    LOGO_ = 0, 
-    TITLE_, 
+typedef enum AppScreen {
+    LOGO_ = 0,
+    TITLE_,
     NEW_PROJECT,    // Screen to create new project
     NEW_RAGDOLL,    // Screen for ragdoll creation
     NEW_ANIMATION,
@@ -300,12 +306,12 @@ void DrawGUI(PoseFrame basePoseFrame){
     int guiHeightMargin = 5;
     // GUI rotation values
     /* int xRotation = 0;
-    int yRotation = 0;
-    int zRotation = 0; */
+     int yRotation = 0;
+     int zRotation = 0; */
     
-    int xRotation = basePoseFrame.hip.rot.x;
-    int yRotation = basePoseFrame.hip.rot.y;
-    int zRotation = basePoseFrame.hip.rot.z;
+    int xRotation = _poseFrame.hip.rot.x;
+    int yRotation = _poseFrame.hip.rot.y;
+    int zRotation = _poseFrame.hip.rot.z;
     
     
     // Draw GUI
@@ -316,7 +322,7 @@ void DrawGUI(PoseFrame basePoseFrame){
     //value = (int)GuiSliderBar((Rectangle){ x, y, width, height }, "Left Text", "Right Text", value, minValue, maxValue);
     // X Axis
     //xRotation = GuiSliderBar((Rectangle){(GetScreenWidth() - guiWidth + guiWidthMargin), 50, guiWidth - (guiWidthMargin * 2), 20}, "X", TextFormat("x: %i", xRotation), xRotation, -90, 90);
-    GuiSliderBar((Rectangle){(GetScreenWidth() - guiWidth + guiWidthMargin), 50, guiWidth - (guiWidthMargin * 2), 20}, "X", NULL, &xRotation, -90, 90);
+    xRotation = GuiSliderBar((Rectangle){(GetScreenWidth() - guiWidth + guiWidthMargin), 50, guiWidth - (guiWidthMargin * 2), 20}, "X", NULL, (float)xRotation, -90.0, 90.0);
     // Y Axis
     //yRotation = GuiSliderBar((Rectangle){(GetScreenWidth() - guiWidth + guiWidthMargin), 75, guiWidth - (guiWidthMargin * 2), 20}, "Y", TextFormat("y: %i", yRotation), yRotation, -90, 90);
     // Z Axis
@@ -324,9 +330,9 @@ void DrawGUI(PoseFrame basePoseFrame){
     
     //GuiValueBox(Rectangle bounds, const char *text, int *value, int minValue, int maxValue, bool editMode);
     //bool value = GuiValueBox((Rectangle){GetScreenWidth() - (guiWidth * 3)+ 20.0f, 50, guiWidth - 40.0f, 20}, "X - Axis",&xRotation, -100, 100, true);
-    basePoseFrame.hip.rot.x = xRotation;
-    basePoseFrame.hip.rot.y = yRotation;
-    basePoseFrame.hip.rot.z = zRotation;
+    _poseFrame.hip.rot.x = xRotation;
+    _poseFrame.hip.rot.y = yRotation;
+    _poseFrame.hip.rot.z = zRotation;
     
     DrawText("Animation Ragdoll!", GetScreenWidth() - guiWidth + 20, 10, 20, MAROON);
 }
@@ -340,16 +346,32 @@ int main(void)
     //--------------------------------------------------------------------------------------
     const int screenWidth = 800;
     const int screenHeight = 450;
-
+    
     InitWindow(screenWidth, screenHeight, "raylib [core] example - basic screen manager");
-
+    
     GameScreen currentScreen = WORKSPACE;
     font = LoadFont("resources/mecha.png");
     
     //--------------------------------------------------------------------------------------
     // TODO: Initialize all required variables and load all required data here!
     
-    Skeleton skeleton = (Skeleton){
+    /* Skeleton skeleton = (Skeleton){
+        .root = (Vector3){0.0f,0.0f,0.0f},
+        .hip = (Vector3){0.0f,2.0f,0.0f},
+        .lHip = (Vector3){0.5f,0.0f,0.0f},
+        .lKnee = (Vector3){0.0f,-1.0f,0.0f},
+        .rHip = (Vector3){-0.5f,0.0f,0.0f},
+        .rKnee = (Vector3){0.0f,-1.0f,0.0f},
+        .torso = (Vector3){0.0f,0.5f,0.0f},
+        .chest = (Vector3){0.0f,1.0f,0.0f},
+        .lShoulder = (Vector3){1.0f,1.0f,0.0f},
+        .lElbow = (Vector3){0.0f,-1.0f,0.0f},
+        .rShoulder = (Vector3){-1.0f,1.0f,0.0f},
+        .rElbow = (Vector3){0.0f,-1.0f,0.0f},
+        .neck = (Vector3){0.0f,0.0f,0.0f}
+    }; */
+    
+    _skeleton = (Skeleton){
         .root = (Vector3){0.0f,0.0f,0.0f},
         .hip = (Vector3){0.0f,2.0f,0.0f},
         .lHip = (Vector3){0.5f,0.0f,0.0f},
@@ -365,7 +387,23 @@ int main(void)
         .neck = (Vector3){0.0f,0.0f,0.0f}
     };
     
-    Ragdoll ragdoll = (Ragdoll){
+    /* Ragdoll ragdoll = (Ragdoll){
+        .root =     (Vector3){0.0f,     0.0f,   0.0f},
+        .hip =      (Vector3){1.5f,     0.5f,   0.5f},
+        .lHip =     (Vector3){0.5f,     1.0f,   0.5f},
+        .lKnee =    (Vector3){0.5f,     1.0f,   0.5f},
+        .rHip =     (Vector3){0.5f,     1.0f,   0.5f},
+        .rKnee =    (Vector3){0.5f,     1.0f,   0.5f},
+        .torso =    (Vector3){1.5f,     1.0f,   0.5f},
+        .chest =    (Vector3){1.5f,     1.0f,   0.5f},
+        .lShoulder = (Vector3){0.5f,    1.0f,   0.5f},
+        .lElbow =   (Vector3){0.5f,     1.0f,   0.5f},
+        .rShoulder = (Vector3){0.5f,    1.0f,   0.5f},
+        .rElbow =   (Vector3){0.5f,     1.0f,   0.5f},
+        .neck =     (Vector3){1.0f,     1.5f,   1.0f}
+    }; */
+    
+    _ragdoll = (Ragdoll){
         .root =     (Vector3){0.0f,     0.0f,   0.0f},
         .hip =      (Vector3){1.5f,     0.5f,   0.5f},
         .lHip =     (Vector3){0.5f,     1.0f,   0.5f},
@@ -381,59 +419,114 @@ int main(void)
         .neck =     (Vector3){1.0f,     1.5f,   1.0f}
     };
     
-    PoseFrame frame = (PoseFrame){
+    /*PoseFrame frame = (PoseFrame){
         .root =     (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .hip =      (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .lHip =     (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .lKnee =    (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .rHip =     (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .rKnee =    (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .torso =    (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .chest =    (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .lShoulder = (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .lElbow =   (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .rShoulder = (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .rElbow =   (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    },
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
         .neck =     (BoneTransforms){
-                        .pos = (Vector3){0.0f,     0.0f,   0.0f},
-                        .rot = (Vector3){0.0f,     0.0f,   0.0f}    
-                    }
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        }
+    };*/
+    
+    _poseFrame = (PoseFrame){
+        .root =     (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .hip =      (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .lHip =     (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .lKnee =    (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .rHip =     (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .rKnee =    (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .torso =    (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .chest =    (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .lShoulder = (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .lElbow =   (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .rShoulder = (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .rElbow =   (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        },
+        .neck =     (BoneTransforms){
+            .pos = (Vector3){0.0f,     0.0f,   0.0f},
+            .rot = (Vector3){0.0f,     0.0f,   0.0f}
+        }
     };
     
     //--------------------------------------------------------------------------------------
@@ -445,10 +538,10 @@ int main(void)
     camera.up = (Vector3){ 0.0f, 1.0f, 0.0f };          // Camera up vector (rotation towards target)
     camera.fovy = 45.0f;                                // Camera field-of-view Y
     camera.projection = CAMERA_PERSPECTIVE;             // Camera projection type
-
+    
     SetTargetFPS(60);               // Set desired framerate (frames-per-second)
     //--------------------------------------------------------------------------------------
-
+    
     // Main game loop
     while (!WindowShouldClose())    // Detect window close button or ESC key
     {
@@ -459,9 +552,9 @@ int main(void)
             case LOGO:
             {
                 // TODO: Update LOGO screen variables here!
-
+                
                 framesCounter++;    // Count frames
-
+                
                 // Wait for 2 seconds (120 frames) before jumping to TITLE screen
                 if (framesCounter > 20)
                 {
@@ -471,7 +564,7 @@ int main(void)
             case TITLE:
             {
                 // TODO: Update TITLE screen variables here!
-
+                
                 // Press enter to change to WORKSPACE screen
                 if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
                 {
@@ -488,7 +581,7 @@ int main(void)
                     //UpdateCamera(&camera, CAMERA_ORBITAL || CAMERA_FIRST_PERSON || CAMERA_FREE);
                     UpdateCamera(&camera, CAMERA_FREE);
                 }
-
+                
                 // Press enter to change to ENDING screen
                 if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
                 {
@@ -498,7 +591,7 @@ int main(void)
             case ENDING:
             {
                 // TODO: Update ENDING screen variables here!
-
+                
                 // Press enter to return to TITLE screen
                 if (IsKeyPressed(KEY_ENTER) || IsGestureDetected(GESTURE_TAP))
                 {
@@ -508,77 +601,77 @@ int main(void)
             default: break;
         }
         //----------------------------------------------------------------------------------
-
+        
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
-
-            ClearBackground(RAYWHITE);
-
-            switch(currentScreen)
+        
+        ClearBackground(RAYWHITE);
+        
+        switch(currentScreen)
+        {
+            case LOGO:
             {
-                case LOGO:
-                {
-                    // TODO: Draw LOGO screen here!
-                    DrawText("LOGO SCREEN", 20, 20, 40, LIGHTGRAY);
-                    DrawText("WAIT for a moment...", 290, 220, 20, GRAY);
-
-                } break;
-                case TITLE:
-                {
-                    // TODO: Draw TITLE screen here!
-                    DrawRectangle(0, 0, screenWidth, screenHeight, GREEN);
-                    DrawText("TITLE SCREEN", 20, 20, 40, DARKGREEN);
-                    DrawText("PRESS ENTER or TAP to JUMP to WORKSPACE SCREEN", 120, 220, 20, DARKGREEN);
-
-                } break;
-                case WORKSPACE:
-                {
-                    // TODO: Draw WORKSPACE screen here!
-                    
-                    Vector2 pos = { 20, 10 };
-                    DrawTextEx(font, "EDITOR WORKSPACE SCREEN", pos, font.baseSize*3.0f, 4, BLACK);
-                    DrawText("You can edit animations here!!!", 130, GetScreenHeight() - (font.baseSize*1.1f), 20, BLACK);
-                    
-                     BeginMode3D(camera);
-      
-                        // Draw the grid
-                        DrawGrid(20, 1.0f);
-                        
-                        // Draw the ragdoll
-                        DrawRagdoll(skeleton, ragdoll, frame, false);
-                    
-                    EndMode3D();
-                    
-                    DrawGUI(frame);
-                    
-                    // DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
-                    // DrawText("WORKSPACE SCREEN", 20, 20, 40, MAROON);
-                    // DrawText("PRESS ENTER or TAP to JUMP to ENDING SCREEN", 130, 220, 20, MAROON);
-
-                } break;
-                case ENDING:
-                {
-                    // TODO: Draw ENDING screen here!
-                    DrawRectangle(0, 0, screenWidth, screenHeight, BLUE);
-                    DrawText("ENDING SCREEN", 20, 20, 40, DARKBLUE);
-                    DrawText("PRESS ENTER or TAP to RETURN to TITLE SCREEN", 120, 220, 20, DARKBLUE);
-
-                } break;
-                default: break;
-            }
-
+                // TODO: Draw LOGO screen here!
+                DrawText("LOGO SCREEN", 20, 20, 40, LIGHTGRAY);
+                DrawText("WAIT for a moment...", 290, 220, 20, GRAY);
+                
+            } break;
+            case TITLE:
+            {
+                // TODO: Draw TITLE screen here!
+                DrawRectangle(0, 0, screenWidth, screenHeight, GREEN);
+                DrawText("TITLE SCREEN", 20, 20, 40, DARKGREEN);
+                DrawText("PRESS ENTER or TAP to JUMP to WORKSPACE SCREEN", 120, 220, 20, DARKGREEN);
+                
+            } break;
+            case WORKSPACE:
+            {
+                // TODO: Draw WORKSPACE screen here!
+                
+                Vector2 pos = { 20, 10 };
+                DrawTextEx(font, "EDITOR WORKSPACE SCREEN", pos, font.baseSize*3.0f, 4, BLACK);
+                DrawText("You can edit animations here!!!", 130, GetScreenHeight() - (font.baseSize*1.1f), 20, BLACK);
+                
+                BeginMode3D(camera);
+                
+                // Draw the grid
+                DrawGrid(20, 1.0f);
+                
+                // Draw the ragdoll
+                DrawRagdoll(_skeleton, _ragdoll, _poseFrame, false);
+                
+                EndMode3D();
+                
+                DrawGUI(_poseFrame);
+                
+                // DrawRectangle(0, 0, screenWidth, screenHeight, PURPLE);
+                // DrawText("WORKSPACE SCREEN", 20, 20, 40, MAROON);
+                // DrawText("PRESS ENTER or TAP to JUMP to ENDING SCREEN", 130, 220, 20, MAROON);
+                
+            } break;
+            case ENDING:
+            {
+                // TODO: Draw ENDING screen here!
+                DrawRectangle(0, 0, screenWidth, screenHeight, BLUE);
+                DrawText("ENDING SCREEN", 20, 20, 40, DARKBLUE);
+                DrawText("PRESS ENTER or TAP to RETURN to TITLE SCREEN", 120, 220, 20, DARKBLUE);
+                
+            } break;
+            default: break;
+        }
+        
         EndDrawing();
         //----------------------------------------------------------------------------------
     }
-
+    
     // De-Initialization
     //--------------------------------------------------------------------------------------
-
+    
     // TODO: Unload all loaded data (textures, fonts, audio) here!
-
+    
     CloseWindow();        // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
-
+    
     return 0;
 }
