@@ -7,7 +7,9 @@ https://github.com/raysan5/raylib-game-template
 3D animation is in progress, need to implement timeline
 
 This is a possible candidate for 2d animation mesh
-// Generate a simple triangle mesh from code
+<code>
+// Generate a simple triangle mesh from code...
+
 static Mesh GenMeshCustom(void)
 {
     Mesh mesh = { 0 };
@@ -52,3 +54,4 @@ static Mesh GenMeshCustom(void)
 
     return mesh;
 }
+</code>
